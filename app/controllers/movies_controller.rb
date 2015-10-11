@@ -15,32 +15,132 @@ class MoviesController < ApplicationController
   def index
     @movies = Movie.all
     get_all_ratings()
-    get_checked_boxes()
     
-    if(params[:ratings])
-      #:ratings is a hash of the rating which is passed in
-      @ratingshash = params[:ratings]
-      #justKeys should be something like [G,PG13]
-      #if you call keys on a hash it will return just keys 
-      @justKeys = @ratingshash.keys
-      @movies = Movie.where(rating: @justKeys)
+    # # check if params[:ratings] and paramas[:sort_by] is null and the session[:ratings] 
+    # # and session[:sort_by] is not null
+    # # this is the only case when we should update the params to match the saved session
+    # if(params[:sort_by].nil? && params[:ratings].nil? && (!session[:sort].nil? || !session[:ratings].nil?))
+    #   redirect_to movies_path(:sort_by => session[:sort_by], :ratings => session[:ratings]) and return 
+    # # in any other case session should be updated to match params
+    # end
     
-    else
-      @movies = Movie.all
-      @justKeys = @all_ratings
+    # if(params[:sort_by].nil? && params[:ratings].nil? && (session[:sort].nil? && session[:ratings].nil?))
+    #   @movies = Movie.all
+    # end
+    
+    # @ratings = params[:ratings]
+    # @sort = params[:sort_by]
+    # if(@ratings.nil?)
+    #   @justKeys = @all_ratings
+    # else
+    #   @justKeys = params[:ratings].keys
+    # end
+    
+    
+    # if(!@sort.nil?)
+    #   if(!@ratings.nil?)
+    #     @movies = Movie.where(rating: @justKeys).order(session[:sort_by])
+    #   else
+    #     @movies = Movie.order(session[:sort_by])
+    #   end
+    # else
+    #   @movies = Movie.all
+    # end
+     
+    
+    # session[:ratings] = @ratings
+    # session[:sort_by] = @sort
+      
+    
+    # if(params[:ratings].nil? && session[:ratings].nil? && params[:sort_by].nil? && session[:sort_by].nil? || {})
+    #     @justKeys = @all_ratings
+    #     @movies = Movie.all
+    # end
+    
+    # if(params[:ratings].nil? && params[:sort_by].nil? && 
+    #   (!session[:sort_by].nil? && !session[:ratings].nil?))
+    #     params[:ratings] = session[:ratings]
+    #     params[:sort_by] = session[:sort_by]
+    #     @justKeys = params[:ratings].keys()
+    #     redirect_to movies_path(params) and return
+    # end
+    
+    # if(!params[:sort_by].nil?) #sort by is not null
+    #   if(!params[:ratings].nil?) # ratings is not null 
+    #     session[:ratings] = params[:ratings]
+    #     session[:sort_by] = params[:sort_by]
+    #     @justKeys = session[:ratings].keys
+    #     @movies = Movie.where(rating: @justKeys).order(params[:sort_by])
+    #   else #ratings is null 
+    #     session[:sort_by] = params[:sort_by]
+    #     @justKeys = @all_ratings
+    #     @movie = Movie.order(params[:sort_by])
+    #   end
+    # else #sort by is null
+    #   @movies = Movie.where(rating: @justKeys)
+    # end
+    
+    # if(!params[:ratings].nil?)
+    #   if(!params[:sort_by].nil?)
+    #     session[:ratings] = params[:ratings]
+    #     session[:sort_by] = params[:sort_by]
+    #     @justKeys = session[:ratings].keys
+    #     @movies = Movie.where(rating: @justKeys).order(params[:sort_by])
+    #   else
+    #     session[:ratings] = params[:ratings]
+    #     @justKeys = params[:ratings].keys
+    #     @movies = Movie.where(rating: @justKeys)
+    #   end
+    # else
+    #   @movies = Movie.order(params[:sort_by])
+    # end
+    
+      
+        
+        
+      # check if params[:ratings] and paramas[:sort_by] is null and the session[:ratings] 
+    # and session[:sort_by] is not null
+    # this is the only case when we should update the params to match the saved session
+    if(params[:sort_by].nil? && params[:ratings].nil? && (!session[:sort].nil? || !session[:ratings].nil?))
+      @justKeys = session[:ratings].keys()
+      redirect_to movies_path(:sort_by => session[:sort_by], :ratings => session[:ratings]) and return 
+    # in any other case session should be updated to match params
     end
-
-    #if sort by was set to "title" then order by the titles
-      if(params[:sort_by] == "title")
-        @movies = Movie.order(:title)
-        @titleclass = "hilite"
+    
+    if(params[:sort_by].nil? && params[:ratings].nil? && (session[:sort].nil? && session[:ratings].nil?))
+      @movies = Movie.all
+    end
+    
+    #sort by is null by ratings is not
+    if(params[:sort_by].nil? && session[:sort_by].nil? || {})
+      if(!params[:ratings].nil?)
+        session[:ratings] = params[:ratings]
+        @justKeys = session[:ratings].keys()
+        @movies = Movie.where(rating: @justKeys)
+      else
+        @justKeys = @all_ratings
+        @movie = Movie.all
+      end
+    end
+    
+    if(params[:sort_by])
+      if(params[:ratings])
+        session[:sort_by] = params[:sort_by]
+        session[:ratings] = params[:ratings]
+        @justKeys = session[:ratings].keys
+        @movies = Movie.where(rating: @justKeys).order(session[:sort_by])
+      else
+        session[:sort_by] = params[:sort_by]
+        if(session[:ratings].nil?)
+          @movies = Movie.order(session[:sort_by])
+        else
+          @justKeys = session[:ratings].keys
+          @movies = Movie.where(rating: @justKeys).order(session[:sort_by])
+        end
       end
       
-      #if sort_by was set to release date then order by release date
-      if(params[:sort_by] == "release_date")
-        @movies = Movie.order(:release_date)
-        @releasedateclass = "hilite"
-      end
+    end
+
   end
 
   def new
@@ -75,18 +175,6 @@ class MoviesController < ApplicationController
     # pluck selects one column from a table
     # uniq selects only unique values -- won't repeat the ratings 
     @all_ratings = Movie.uniq.pluck(:rating)
-  end
-  
-  def get_checked_boxes
-    @check_box_hash = Hash.new
-    @check_box_hash = {"PG" => true ,"PG13" => true , "G" => true, "R" => true}
-    # @ratingshash = params[:ratings]
-    # @check_box_hash = {@ratingshash}
-    # for element in @check_box_hash
-    #   if(element.value == 1)
-    #     then element.value = true
-      
-  
   end
   
   private :movie_params

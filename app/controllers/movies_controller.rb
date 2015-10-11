@@ -23,15 +23,16 @@ class MoviesController < ApplicationController
       @justKeys = session[:ratings].keys()
       flash.keep(:notice)
       redirect_to movies_path(:sort_by => session[:sort_by], :ratings => session[:ratings]) and return 
-    # in any other case session should be updated to match params
     end
     
+    #if both params and session are null, show all movies
     if(params[:sort_by].nil? && params[:ratings].nil? && (session[:sort].nil? && session[:ratings].nil?))
       @movies = Movie.all
     end
     
-    #sort by is null by ratings is not
+    #if there is no filter for sort by 
     if(params[:sort_by].nil? && session[:sort_by].nil? || {})
+      #and there is filtering by ratings then filter the movies by which ratings were choosen
       if(!params[:ratings].nil?)
         session[:ratings] = params[:ratings]
         @justKeys = session[:ratings].keys()
@@ -42,8 +43,10 @@ class MoviesController < ApplicationController
       end
     end
     
+    #if params has a filter for sort by
     if(params[:sort_by])
       if(params[:ratings])
+        #set the session to match params so updated settings are remembered
         session[:sort_by] = params[:sort_by]
         session[:ratings] = params[:ratings]
         @justKeys = session[:ratings].keys
@@ -57,6 +60,7 @@ class MoviesController < ApplicationController
           @movies = Movie.where(rating: @justKeys).order(session[:sort_by])
         end
       end
+      #hilite the title of which sort_by type was chosen
       if(params[:sort_by] == "title")
         @titleclass = "hilite"
       end

@@ -25,17 +25,28 @@ class MoviesController < ApplicationController
       redirect_to movies_path(:sort_by => session[:sort_by], :ratings => session[:ratings]) and return 
     end
     
-    #if both params and session are null, show all movies
+    #if both params and session are null, show all ratings unsorted
     if(params[:sort_by].nil? && params[:ratings].nil? && (session[:sort].nil? && session[:ratings].nil?))
       @movies = Movie.all
     end
     
+    # if(params[:ratings] != session[:ratings])
+    #   if(params[:sort_by].nil? && !session[:sort_by].nil?)
+    #     @justKeys = params[:ratings].keys
+    #     @movies = Movie.where(rating: @justKeys).order(session[:sort_by])
+    #   end
+    # end
+      
     #if there is no filter for sort by 
     if(params[:sort_by].nil? && session[:sort_by].nil? || {})
       #and there is filtering by ratings then filter the movies by which ratings were choosen
       if(!params[:ratings].nil?)
         session[:ratings] = params[:ratings]
         @justKeys = session[:ratings].keys()
+        @movies = Movie.where(rating: @justKeys)
+      elsif(!session[:ratings].nil?)
+        params[:ratings] = session[:ratings]
+        @justKeys = params[:ratings].keys()
         @movies = Movie.where(rating: @justKeys)
       else
         @justKeys = @all_ratings
@@ -56,10 +67,20 @@ class MoviesController < ApplicationController
         if(session[:ratings].nil?)
           @movies = Movie.order(session[:sort_by])
         else
-          @justKeys = session[:ratings].keys
+          params[:ratings] = session[:ratings]
+          @justKeys = params[:ratings].keys
           @movies = Movie.where(rating: @justKeys).order(session[:sort_by])
         end
       end
+    else
+      if(session[:sort_by])
+        session[:ratings] = params[:ratings]
+        params[:sort_by] = session[:sort_by]
+        @justKeys = session[:ratings].keys
+        @movies = Movie.where(rating: @justKeys).order(session[:sort_by])
+      end
+    end
+      
       #hilite the title of which sort_by type was chosen
       if(params[:sort_by] == "title")
         @titleclass = "hilite"
@@ -67,8 +88,6 @@ class MoviesController < ApplicationController
       if(params[:sort_by] == "release_date")
         @releasedateclass = "hilite"
       end
-    end
-
   end
 
   def new
